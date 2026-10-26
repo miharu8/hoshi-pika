@@ -1,430 +1,420 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ほしピカ 〜星のナビで、いつでも気分上々ノート〜</title>
-  
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0d1117" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- React & ReactDOM -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap');
-    body {
-      font-family: 'Zen Kaku Gothic New', sans-serif;
-      background-color: #0d1117;
-      color: #e6edf3;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .font-serif-jp { font-family: 'Shippori Mincho', serif; }
-    .glass-card {
-      background: rgba(22, 27, 34, 0.85);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .sakura-gradient {
-      background: linear-gradient(135deg, #f472b6 0%, #fb7185 100%);
-    }
-    .gold-text {
-      color: #fef08a;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ほしピカ 〜星の気配と、こころが凪ぐ静かなノート〜</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0b0f1e" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0b0f1e; --card:rgba(30,37,76,.78); --card-b:rgba(255,255,255,.10);
+    --text:#e9ecf8; --sub:#98a0c4; --gold:#fdf1a8; --pink:#f9a8d4; --pink2:#fb7185; --blue:#8b9cf4;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%}
+  body{
+    font-family:'Zen Kaku Gothic New',-apple-system,'Hiragino Sans',sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #1b2250 0%, transparent 60%),
+      radial-gradient(800px 500px at 100% 100%, #2a1b44 0%, transparent 60%),
+      var(--bg);
+    background-attachment:fixed;
+  }
+  .serif{font-family:'Shippori Mincho','Hiragino Mincho ProN',serif}
+  #app{max-width:480px;margin:0 auto;padding:18px 16px 40px}
+  .top{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.12em;color:var(--sub)}
+  h1{margin:14px 0 4px;text-align:center;font-size:30px;letter-spacing:.2em;color:var(--gold);font-weight:800}
+  .lead{text-align:center;font-size:12px;color:var(--sub);margin:0 0 18px;letter-spacing:.08em}
+  .card{background:var(--card);border:1px solid var(--card-b);border-radius:26px;padding:18px;margin-bottom:14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .moon-wrap{display:flex;justify-content:center;margin:6px 0 12px}
+  .pill{display:block;width:max-content;max-width:100%;margin:0 auto;padding:7px 16px;border-radius:999px;background:rgba(10,14,35,.7);border:1px solid var(--card-b);font-size:13px;text-align:center}
+  .pill b{color:var(--gold);font-weight:700}
+  .msg{margin-top:16px;padding-top:14px;border-top:1px solid var(--card-b);font-size:13px;line-height:1.8}
+  .msg h3{margin:0 0 4px;font-size:12px;color:var(--pink);font-weight:700}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .sound{display:flex;align-items:center;gap:10px;padding:12px 14px}
+  .disc{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,#1b1f40 28%,#f472b6 30%,#f472b6 40%,#1b1f40 42%);border:1px solid var(--card-b);flex-shrink:0}
+  .disc.on{animation:spin 3s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .sound .t{flex:1;font-size:12px;line-height:1.4}
+  .sound .t small{display:block;color:var(--sub);font-size:10px}
+  .hz{border:1px solid var(--card-b);background:rgba(10,14,35,.7);color:var(--text);border-radius:12px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .hz small{font-size:9px;font-weight:500;color:var(--sub);margin-left:2px}
+  .hz.on{border-color:var(--pink);background:rgba(244,114,182,.18);color:#ffd9ec}
+  .ttl{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+  .link{background:none;border:none;color:var(--pink);font-size:12px;cursor:pointer;font-family:inherit;padding:0}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+  .chip{padding:10px 26px;border-radius:16px;border:1px solid var(--card-b);background:rgba(10,14,35,.7);color:var(--text);font-size:13px;cursor:pointer;font-family:inherit}
+  .chip.on{background:rgba(139,156,244,.28);border-color:#f1d4ea;box-shadow:0 0 0 2px rgba(244,114,182,.25)}
+  .cur{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:16px;background:rgba(10,14,35,.7);font-size:13px;font-weight:700}
+  .cur small{font-weight:500;color:var(--sub)}
+  .badge{font-size:11px;padding:3px 10px;border-radius:999px;background:rgba(139,156,244,.25);color:#cdd5ff;font-weight:500}
+  label.f{display:block;font-size:12px;font-weight:700;margin:14px 0 6px}
+  label.f small{font-weight:400;color:var(--sub);margin-left:4px}
+  textarea,input[type=text],input[type=date],select{
+    width:100%;background:rgba(10,14,35,.75);color:var(--text);border:1px solid var(--card-b);border-radius:16px;padding:12px 14px;font-size:13px;font-family:'Shippori Mincho',serif;outline:none;resize:none}
+  textarea{min-height:76px;line-height:1.7}
+  textarea:focus,input:focus,select:focus{border-color:var(--pink)}
+  .go{width:100%;margin-top:16px;border:none;border-radius:16px;padding:14px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:'Shippori Mincho',serif;letter-spacing:.1em;background:linear-gradient(90deg,#f9a8d4 0%,#c4a3f5 55%,#8b9cf4 100%);box-shadow:0 6px 20px rgba(244,114,182,.25)}
+  .go:disabled{opacity:.4;cursor:default}
+  .rec{background:rgba(10,14,35,.7);border:1px solid var(--card-b);border-radius:16px;padding:12px 14px;margin-top:10px;font-size:12px;line-height:1.7}
+  .rec .h{display:flex;justify-content:space-between;color:var(--sub);font-size:10px;margin-bottom:4px}
+  .rec .h b{color:var(--pink);font-weight:500}
+  .rec .k{color:var(--gold);font-size:10px;margin-top:4px}
+  .rec p{margin:0;white-space:pre-wrap;word-break:break-word;font-family:'Shippori Mincho',serif}
+  .empty{text-align:center;color:var(--sub);font-size:12px;padding:16px 0 6px}
+  footer{text-align:center;margin-top:22px;color:var(--sub);font-size:11px}
+  footer .links{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  footer .links button{background:none;border:none;color:var(--text);font-size:12px;cursor:pointer;font-family:inherit}
+  footer .cr{font-family:'Shippori Mincho',serif;font-size:10px}
+  .ov{position:fixed;inset:0;background:rgba(3,5,15,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+  .box{background:#161c3d;border:1px solid var(--card-b);border-radius:26px;padding:24px;width:100%;max-width:400px;max-height:88vh;overflow-y:auto;text-align:center}
+  .box h3{margin:6px 0 10px;font-size:17px;font-weight:600}
+  .box p{font-size:13px;line-height:1.9;margin:0 0 6px}
+  .ph{font-size:11px;color:var(--pink)}
+  .gh{background:transparent;border:1px solid var(--card-b);color:var(--text);border-radius:14px;padding:10px 14px;font-size:12px;cursor:pointer;font-family:inherit}
+  .left{text-align:left}
+  .plist{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+  .plist .it{display:flex;justify-content:space-between;align-items:center;background:rgba(10,14,35,.7);border-radius:14px;padding:10px 12px;font-size:12px}
+  .del{color:#fda4af;background:none;border:none;font-size:12px;cursor:pointer;font-family:inherit}
+</style>
 </head>
-<body class="min-h-screen flex justify-center">
-  <div id="root" class="w-full max-w-md min-h-screen flex flex-col relative pb-20"></div>
+<body>
+<div id="app"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef, useMemo } = React;
+<script>
+(function(){
+  "use strict";
 
-    // 月齢計算
-    const getMoonPhaseData = (date = new Date()) => {
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      const c = Math.floor(year / 100);
-      const e = 2 - c + Math.floor(c / 4);
-      const jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + e - 1524.5;
-      const daysSinceNew = jd - 2451549.5;
-      const newMoons = daysSinceNew / 29.53058770576;
-      const cycleFraction = newMoons - Math.floor(newMoons);
-      const age = Math.round(cycleFraction * 29.53058770576 * 10) / 10;
-      
-      let phaseName = '満月（Full Moon）';
-      let guidance = '記憶と感情が満ちる刻。感謝と共にゼロへ戻しましょう。';
+  /* ---------- 保存まわり ---------- */
+  function load(key, fallback){
+    try{ var s = localStorage.getItem(key); if(s) return JSON.parse(s); }catch(e){}
+    return fallback;
+  }
+  function save(key, val){
+    try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
+  }
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
 
-      if (age < 1.8 || age >= 28.5) {
-        phaseName = '新月';
-        guidance = '静かに心を整え、純粋な問いを蒔くタイミングです。';
-      } else if (age < 7.4) {
-        phaseName = '三日月';
-        guidance = '直感を素直に受け取り、軽やかに一歩踏み出しましょう。';
-      } else if (age < 14.8) {
-        phaseName = '満ちゆく月';
-        guidance = '思考のノイズを手放し、愛と調和で心を満たします。';
-      } else if (age < 22.1) {
-        phaseName = '下弦の月';
-        guidance = '不要になった緊張や執着を深く息を吐くように手放す時。';
-      }
-
-      return { age, phaseName, guidance };
-    };
-
-    // 星座計算
-    const getZodiacSign = (dateString) => {
-      if (!dateString) return '未設定';
-      const [, mStr, dStr] = dateString.split('-');
-      const m = parseInt(mStr, 10);
-      const d = parseInt(dStr, 10);
-      if ((m === 3 && d >= 21) || (m === 4 && d <= 19)) return '牡羊座';
-      if ((m === 4 && d >= 20) || (m === 5 && d <= 20)) return '牡牛座';
-      if ((m === 5 && d >= 21) || (m === 6 && d <= 21)) return '双子座';
-      if ((m === 6 && d >= 22) || (m === 7 && d <= 22)) return '蟹座';
-      if ((m === 7 && d >= 23) || (m === 8 && d <= 22)) return '獅子座';
-      if ((m === 8 && d >= 23) || (m === 9 && d <= 22)) return '乙女座';
-      if ((m === 9 && d >= 23) || (m === 10 && d <= 23)) return '天秤座';
-      if ((m === 10 && d >= 24) || (m === 11 && d <= 22)) return '蠍座';
-      if ((m === 11 && d >= 23) || (m === 12 && d <= 21)) return '射手座';
-      if ((m === 12 && d >= 22) || (m === 1 && d <= 19)) return '山羊座';
-      if ((m === 1 && d >= 20) || (m === 2 && d <= 18)) return '水瓶座';
-      return '魚座';
-    };
-
-    // 月グラフィック
-    const MoonGraphic = ({ age }) => {
-      const radius = 22;
-      const center = 26;
-      const cycle = age / 29.5305877;
-
-      let darkPath = "";
-      if (cycle < 0.5) {
-        darkPath = `M ${center} ${center - radius} A ${radius} ${radius} 0 0 1 ${center} ${center + radius} A ${radius} ${radius} 0 0 0 ${center} ${center - radius}`;
-      } else {
-        darkPath = `M ${center} ${center - radius} A ${radius} ${radius} 0 0 0 ${center} ${center + radius} A ${radius} ${radius} 0 0 1 ${center} ${center - radius}`;
-      }
-
-      return (
-        <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
-          <svg viewBox="0 0 52 52" className="w-12 h-12 drop-shadow-[0_0_6px_rgba(254,240,138,0.4)]">
-            <circle cx={center} cy={center} r={radius} fill="#fef08a" />
-            {(cycle < 0.48 || cycle > 0.52) && (
-              <path d={darkPath} fill="#0d1117" opacity="0.92" />
-            )}
-            <circle cx={center} cy={center} r={radius} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-          </svg>
-        </div>
-      );
-    };
-
-    function App() {
-      const [profiles, setProfiles] = useState(() => {
-        try {
-          const saved = localStorage.getItem('hoshi_pika_profiles');
-          if (saved) return JSON.parse(saved);
-        } catch (e) {}
-        return [
-          { id: 'self', name: '自分（あなた）', birth: '1990-01-01', relation: 'Self' },
-          { id: 'partner', name: 'パートナー / 取引先', birth: '1988-05-15', relation: 'Partner' }
-        ];
-      });
-
-      const [activeProfileId, setActiveProfileId] = useState('self');
-      const [entries, setEntries] = useState(() => {
-        try {
-          const saved = localStorage.getItem('hoshi_pika_entries');
-          if (saved) return JSON.parse(saved);
-        } catch (e) {}
-        return [];
-      });
-
-      const [activeTab, setActiveTab] = useState('reflect');
-      const [isCleansingModalOpen, setIsCleansingModalOpen] = useState(false);
-      const [cleansingStep, setCleansingStep] = useState(0);
-      const [inputText, setInputText] = useState('');
-      const [inputType, setInputType] = useState('release');
-      const [isPlayingSound, setIsPlayingSound] = useState(false);
-      const [soundFreq, setSoundFreq] = useState(432);
-
-      const audioCtxRef = useRef(null);
-      const oscRef = useRef(null);
-
-      const moon = useMemo(() => getMoonPhaseData(), []);
-      const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
-      const activeZodiac = getZodiacSign(activeProfile.birth);
-
-      useEffect(() => {
-        try { localStorage.setItem('hoshi_pika_profiles', JSON.stringify(profiles)); } catch (e) {}
-      }, [profiles]);
-
-      useEffect(() => {
-        try { localStorage.setItem('hoshi_pika_entries', JSON.stringify(entries)); } catch (e) {}
-      }, [entries]);
-
-      const toggleSound = (freq) => {
-        if (isPlayingSound && soundFreq === freq) {
-          if (oscRef.current) oscRef.current.stop();
-          setIsPlayingSound(false);
-          return;
-        }
-
-        if (oscRef.current) oscRef.current.stop();
-        if (!audioCtxRef.current) {
-          audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
-        const osc = audioCtxRef.current.createOscillator();
-        const gain = audioCtxRef.current.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, audioCtxRef.current.currentTime);
-        gain.gain.setValueAtTime(0.08, audioCtxRef.current.currentTime);
-
-        osc.connect(gain);
-        gain.connect(audioCtxRef.current.destination);
-
-        osc.start();
-        oscRef.current = osc;
-        setSoundFreq(freq);
-        setIsPlayingSound(true);
-      };
-
-      const advanceCleansing = () => {
-        if (cleansingStep < 4) {
-          setCleansingStep(prev => prev + 1);
-        } else {
-          const newEntry = {
-            id: Date.now().toString(),
-            profileName: activeProfile.name,
-            text: inputText,
-            type: inputType,
-            moonPhase: moon.phaseName,
-            createdAt: new Date().toISOString()
-          };
-          setEntries([newEntry, ...entries]);
-          setInputText('');
-          setIsCleansingModalOpen(false);
-          setCleansingStep(0);
-        }
-      };
-
-      return (
-        <div className="flex-1 flex flex-col p-4 text-slate-100">
-          {/* ヘッダー */}
-          <header className="flex justify-between items-center py-2 border-b border-slate-800/80 mb-3">
-            <span className="text-xs tracking-widest text-slate-400 font-serif-jp uppercase">SAKURA WORKS</span>
-            <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">ver 1.0</span>
-          </header>
-
-          {/* タイトル */}
-          <div className="text-center my-2">
-            <h1 className="text-2xl font-bold font-serif-jp tracking-wider gold-text">ほしピカ</h1>
-            <p className="text-xs text-slate-400 mt-1 font-light">〜星のナビで、いつでも気分上々ノート〜</p>
-          </div>
-
-          {/* 月＆案内人 */}
-          <div className="glass-card rounded-2xl p-4 my-3">
-            <div className="flex items-center space-x-3">
-              <MoonGraphic age={moon.age} />
-              <div className="flex-1">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-semibold text-amber-200">{moon.phaseName}</span>
-                  <span className="text-[10px] text-slate-400">月齢 {moon.age}</span>
-                </div>
-                <p className="mt-1 text-xs text-slate-300 leading-relaxed font-serif-jp">{moon.guidance}</p>
-              </div>
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-slate-800/60 text-slate-300 text-[11px] leading-relaxed">
-              <span className="text-pink-300 font-medium">星の案内人（千鈴龍穂）：</span> 
-              「心に浮かぶ事象を静かに置き、ただゼロの調和へと戻していきましょう。」
-            </div>
-          </div>
-
-          {/* プロファイル切替 */}
-          <div className="flex space-x-2 my-2 overflow-x-auto pb-1">
-            {profiles.map(p => (
-              <button
-                key={p.id}
-                onClick={() => setActiveProfileId(p.id)}
-                className={`px-3 py-1.5 rounded-full text-xs transition-all ${
-                  activeProfileId === p.id 
-                    ? 'bg-gradient-to-r from-pink-500/20 to-amber-500/20 text-pink-200 border border-pink-500/40' 
-                    : 'bg-slate-800/60 text-slate-400'
-                }`}
-              >
-                {p.name}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex justify-between text-[11px] text-slate-400 px-1 mb-3">
-            <span>対象: <strong className="text-slate-200">{activeProfile.name}</strong></span>
-            <span>太陽星座: <strong className="text-amber-300">{activeZodiac}</strong></span>
-          </div>
-
-          {/* メイン機能 */}
-          {activeTab === 'reflect' && (
-            <div className="glass-card rounded-2xl p-4 flex-1 flex flex-col">
-              <div className="flex border-b border-slate-800 mb-3">
-                <button 
-                  onClick={() => setInputType('release')}
-                  className={`pb-2 px-3 text-xs font-medium border-b-2 ${
-                    inputType === 'release' ? 'border-pink-500 text-pink-300' : 'border-transparent text-slate-500'
-                  }`}
-                >
-                  モヤモヤ（手放し）
-                </button>
-                <button 
-                  onClick={() => setInputType('intend')}
-                  className={`pb-2 px-3 text-xs font-medium border-b-2 ${
-                    inputType === 'intend' ? 'border-amber-400 text-amber-200' : 'border-transparent text-slate-500'
-                  }`}
-                >
-                  願い・整え（意図）
-                </button>
-              </div>
-
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder={
-                  inputType === 'release'
-                    ? "手放したい感情や人間関係のモヤモヤを書き出してみてください..."
-                    : "叶えたい願いや本来の自分に戻ったクリアな意図を入力してください..."
-                }
-                className="w-full flex-1 bg-slate-900/60 text-slate-200 rounded-xl p-3 text-xs focus:outline-none resize-none border border-slate-800 font-serif-jp min-h-[120px]"
-              ></textarea>
-
-              <div className="mt-3 flex justify-end">
-                <button
-                  onClick={() => { setCleansingStep(1); setIsCleansingModalOpen(true); }}
-                  disabled={!inputText.trim()}
-                  className="sakura-gradient disabled:opacity-40 text-white font-medium text-xs px-5 py-2.5 rounded-xl shadow-lg"
-                >
-                  四相調和（ゼロ化）へ進む
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'history' && (
-            <div className="glass-card rounded-2xl p-4 flex-1 overflow-y-auto max-h-[380px]">
-              <h3 className="text-xs font-semibold text-slate-300 mb-3">直感録（調和の記録）</h3>
-              {entries.length === 0 ? (
-                <div className="text-center py-10 text-slate-500 text-xs">まだ記録はありません</div>
-              ) : (
-                <div className="space-y-2.5">
-                  {entries.map(e => (
-                    <div key={e.id} className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
-                      <div className="flex justify-between text-[10px] text-slate-400">
-                        <span className="text-pink-300">{e.profileName}</span>
-                        <span>{new Date(e.createdAt).toLocaleDateString()}</span>
-                      </div>
-                      <p className="text-slate-200 font-serif-jp">{e.text}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'sound' && (
-            <div className="glass-card rounded-2xl p-6 flex-1 flex flex-col justify-center items-center text-center space-y-6">
-              <div>
-                <h3 className="text-sm font-semibold font-serif-jp text-slate-200">調和周波数サウンダー</h3>
-                <p className="text-xs text-slate-400 mt-1">ソルフェジオ周波数で心を静かに整えます</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 w-full">
-                <button
-                  onClick={() => toggleSound(432)}
-                  className={`p-4 rounded-xl border flex flex-col items-center ${
-                    isPlayingSound && soundFreq === 432 ? 'bg-pink-500/20 border-pink-500 text-pink-200' : 'bg-slate-900 border-slate-800 text-slate-300'
-                  }`}
-                >
-                  <span className="text-base font-bold font-serif-jp">432 Hz</span>
-                  <span className="text-[10px] text-slate-400 mt-1">深い安らぎ</span>
-                </button>
-
-                <button
-                  onClick={() => toggleSound(528)}
-                  className={`p-4 rounded-xl border flex flex-col items-center ${
-                    isPlayingSound && soundFreq === 528 ? 'bg-amber-500/20 border-amber-500 text-amber-200' : 'bg-slate-900 border-slate-800 text-slate-300'
-                  }`}
-                >
-                  <span className="text-base font-bold font-serif-jp">528 Hz</span>
-                  <span className="text-[10px] text-slate-400 mt-1">記憶の解放</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 下部ナビ */}
-          <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/95 border-t border-slate-800 max-w-md mx-auto py-2 grid grid-cols-3 text-center text-[10px]">
-            <button onClick={() => setActiveTab('reflect')} className={activeTab === 'reflect' ? 'text-pink-400' : 'text-slate-500'}>✨ ゼロ化</button>
-            <button onClick={() => setActiveTab('history')} className={activeTab === 'history' ? 'text-pink-400' : 'text-slate-500'}>📖 直感録</button>
-            <button onClick={() => setActiveTab('sound')} className={activeTab === 'sound' ? 'text-pink-400' : 'text-slate-500'}>🎵 周波数</button>
-          </nav>
-
-          {/* モーダル */}
-          {isCleansingModalOpen && (
-            <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="glass-card rounded-2xl max-w-sm w-full p-6 text-center space-y-4">
-                {cleansingStep === 1 && (
-                  <>
-                    <span className="text-xs text-pink-300 font-serif-jp">Phase 1 : 受容（Acceptance）</span>
-                    <h3 className="text-base font-serif-jp text-slate-100">ありのままを受け止める</h3>
-                    <p className="text-xs text-slate-300 leading-relaxed font-serif-jp">「どのような感情も記憶も否定せず、ただここに置きます。」</p>
-                  </>
-                )}
-
-                {cleansingStep === 2 && (
-                  <>
-                    <span className="text-xs text-pink-300 font-serif-jp">Phase 2 : 許し（Forgiveness）</span>
-                    <h3 className="text-base font-serif-jp text-slate-100">ウニヒピリへの呼びかけ</h3>
-                    <p className="text-xs text-slate-300 leading-relaxed font-serif-jp">「ごめんなさい。許してください。記憶のノイズを優しく包みます。」</p>
-                  </>
-                )}
-
-                {cleansingStep === 3 && (
-                  <>
-                    <span className="text-xs text-pink-300 font-serif-jp">Phase 3 : ゼロ（Zero State）</span>
-                    <h3 className="text-base font-serif-jp text-slate-100">空（Zero）への還元</h3>
-                    <p className="text-xs text-slate-300 leading-relaxed font-serif-jp">「愛しています。執着や記憶データはまっさらな零に戻ります。」</p>
-                  </>
-                )}
-
-                {cleansingStep === 4 && (
-                  <>
-                    <span className="text-xs text-pink-300 font-serif-jp">Phase 4 : 感謝（Gratitude）</span>
-                    <h3 className="text-base font-serif-jp text-slate-100">調和の完了</h3>
-                    <p className="text-xs text-slate-300 leading-relaxed font-serif-jp">「ありがとうございます。内側は美しくクリアに整いました。」</p>
-                  </>
-                )}
-
-                <button
-                  onClick={advanceCleansing}
-                  className="w-full py-3 rounded-xl sakura-gradient text-white text-xs font-medium shadow-lg mt-2"
-                >
-                  {cleansingStep === 4 ? "完了して保存" : "次へ進む"}
-                </button>
-              </div>
-            </div>
-          )}
-
-        </div>
-      );
+  /* ---------- 月齢 ---------- */
+  var SYN = 29.530588853;
+  function moonAge(d){
+    var jd = d.getTime()/86400000 + 2440587.5;
+    var a = (jd - 2451550.1) % SYN;
+    if(a < 0) a += SYN;
+    return a;
+  }
+  // [上限, 日本語名, 英語, メッセージ]
+  var PHASES = [
+    [1.0,  '新月', 'New Moon', '静かに心を整え、純粋な問いをそっと蒔くタイミングです。'],
+    [2.5,  '二日月', 'Waxing Crescent', '小さな気づきを大切に。無理のない一歩で十分です。'],
+    [4.5,  '三日月', 'Waxing Crescent', '直感を素直に受け取り、軽やかに踏み出しましょう。'],
+    [6.5,  '五日月', 'Waxing Crescent', '育ち始めた願いに、やさしく光をあてる時間です。'],
+    [8.5,  '上弦の月', 'First Quarter', '迷いを手放し、今日できる小さな選択を重ねましょう。'],
+    [11.5, '十日夜', 'Waxing Gibbous', '満ちていく流れに身をゆだね、整える力を信じて。'],
+    [13.5, '十三夜', 'Waxing Gibbous', '満ちゆく豊かさを感じる時間。これまでの歩みや周囲の支えに静かな感謝を送りましょう。'],
+    [14.5, '小望月', 'Waxing Gibbous', '満ちる直前の静けさ。心の中のざわめきをそっと置いていきましょう。'],
+    [15.5, '満月', 'Full Moon', '記憶と感情が満ちる刻。感謝とともに、ゼロへ戻していきましょう。'],
+    [16.5, '十六夜', 'Waning Gibbous', 'ゆるやかに欠け始める時。握りしめていたものを緩めて。'],
+    [17.5, '立待月', 'Waning Gibbous', '感謝を言葉にして、心の荷をひとつ下ろしましょう。'],
+    [18.5, '居待月', 'Waning Gibbous', 'ゆっくり座って、今日の自分をねぎらう夜です。'],
+    [19.5, '寝待月', 'Waning Gibbous', '休むことも調和のひとつ。早めに灯りを落として。'],
+    [21.0, '更待月', 'Waning Gibbous', '静けさの中で、手放したいことを見つめましょう。'],
+    [23.5, '下弦の月', 'Last Quarter', '不要になった緊張や執着を、深く息を吐くように手放す時。'],
+    [26.0, '有明月', 'Waning Crescent', '余白をつくる時間。何もしない時間を自分に許して。'],
+    [28.5, '二十六夜', 'Waning Crescent', '終わりと始まりのあいだ。静かに次の周期を迎える準備を。'],
+    [99,   '新月前夜', 'Waning Crescent', '一周のしめくくり。ここまでの自分に「ありがとう」を。']
+  ];
+  function moonInfo(d){
+    var age = moonAge(d);
+    for(var i=0;i<PHASES.length;i++){
+      if(age < PHASES[i][0]) return {age:age, jp:PHASES[i][1], en:PHASES[i][2], msg:PHASES[i][3]};
     }
+    var l = PHASES[PHASES.length-1];
+    return {age:age, jp:l[1], en:l[2], msg:l[3]};
+  }
+  function moonSVG(age){
+    var r=60, c=70;
+    var p = age / SYN;
+    var waning = p > 0.5;
+    var pp = waning ? 1 - p : p;
+    var k = Math.cos(2*Math.PI*pp);       // 1:新月  -1:満月
+    var rx = (r * Math.abs(k)).toFixed(2);
+    var sweep = k > 0 ? 0 : 1;
+    var lit = 'M '+c+' '+(c-r)+' A '+r+' '+r+' 0 0 1 '+c+' '+(c+r)+' A '+rx+' '+r+' 0 0 '+sweep+' '+c+' '+(c-r)+' Z';
+    var tf = waning ? ' transform="translate(140,0) scale(-1,1)"' : '';
+    return '<svg viewBox="0 0 140 140" width="150" height="150" aria-hidden="true">'+
+      '<defs><radialGradient id="mg" cx="40%" cy="38%" r="70%"><stop offset="0%" stop-color="#fffbe0"/><stop offset="100%" stop-color="#f3e28c"/></radialGradient>'+
+      '<filter id="gl" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter></defs>'+
+      '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="#161b3a" stroke="rgba(255,255,255,.15)"/>'+
+      '<g'+tf+'><path d="'+lit+'" fill="#fdf1a8" opacity=".5" filter="url(#gl)"/>'+
+      '<path d="'+lit+'" fill="url(#mg)"/></g></svg>';
+  }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+  /* ---------- 星座 ---------- */
+  function zodiac(ds){
+    if(!ds) return '未設定';
+    var a = ds.split('-'); var m = parseInt(a[1],10), d = parseInt(a[2],10);
+    if(!m || !d) return '未設定';
+    if((m===3&&d>=21)||(m===4&&d<=19)) return '牡羊座';
+    if((m===4&&d>=20)||(m===5&&d<=20)) return '牡牛座';
+    if((m===5&&d>=21)||(m===6&&d<=21)) return '双子座';
+    if((m===6&&d>=22)||(m===7&&d<=22)) return '蟹座';
+    if((m===7&&d>=23)||(m===8&&d<=22)) return '獅子座';
+    if((m===8&&d>=23)||(m===9&&d<=22)) return '乙女座';
+    if((m===9&&d>=23)||(m===10&&d<=23)) return '天秤座';
+    if((m===10&&d>=24)||(m===11&&d<=22)) return '蠍座';
+    if((m===11&&d>=23)||(m===12&&d<=21)) return '射手座';
+    if((m===12&&d>=22)||(m===1&&d<=19)) return '山羊座';
+    if((m===1&&d>=20)||(m===2&&d<=18)) return '水瓶座';
+    return '魚座';
+  }
+
+  /* ---------- 状態 ---------- */
+  var profiles = load('hoshi_pika_profiles_v2', [
+    {id:'self', name:'自分', birth:'1990-05-10', rel:'自分'},
+    {id:'partner', name:'パートナー', birth:'1988-05-15', rel:'パートナー'}
+  ]);
+  var entries = load('hoshi_pika_entries_v2', []);
+  var activeId = profiles[0] ? profiles[0].id : 'self';
+  var releaseText = '', intendText = '';
+  var modal = null;          // null | {type, step?}
+  var playing = 0;           // 0 / 432 / 528
+  var audioCtx = null, osc = null, gainNode = null;
+
+  var STEPS = [
+    ['Phase 1 : 受容（Acceptance）','ありのままを受け止める','「どのような感情も記憶も否定せず、ただここに置きます。」'],
+    ['Phase 2 : 許し（Forgiveness）','インナーチャイルドへの呼びかけ','「ごめんなさい。許してください。記憶のノイズをやさしく包みます。」'],
+    ['Phase 3 : ゼロ（Zero State）','空（ゼロ）への還元','「愛しています。執着や記憶のデータは、まっさらなゼロに戻ります。」'],
+    ['Phase 4 : 感謝（Gratitude）','調和の完了','「ありがとうございます。内側は美しく、クリアに整いました。」']
+  ];
+
+  /* ---------- 音 ---------- */
+  function stopSound(){
+    try{
+      if(osc){
+        if(gainNode && audioCtx){
+          gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+          gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+        }
+        var o = osc; setTimeout(function(){ try{ o.stop(); }catch(e){} }, 300);
+      }
+    }catch(e){}
+    osc = null; gainNode = null; playing = 0;
+  }
+  function toggleSound(freq){
+    if(playing === freq){ stopSound(); render(); return; }
+    stopSound();
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC){ return; }
+      if(!audioCtx) audioCtx = new AC();
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+      osc = audioCtx.createOscillator();
+      gainNode = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.setTargetAtTime(0.08, audioCtx.currentTime, 0.2);
+      osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+      osc.start();
+      playing = freq;
+    }catch(e){ playing = 0; }
+    render();
+  }
+
+  /* ---------- 描画 ---------- */
+  function activeProfile(){
+    for(var i=0;i<profiles.length;i++) if(profiles[i].id===activeId) return profiles[i];
+    return profiles[0];
+  }
+  function recHTML(e){
+    var s = '<div class="rec"><div class="h"><b>'+esc(e.profileName)+'</b><span>'+esc(e.moon)+'・'+esc(new Date(e.createdAt).toLocaleDateString('ja-JP'))+'</span></div>';
+    if(e.release) s += '<div class="k">手放したこと</div><p>'+esc(e.release)+'</p>';
+    if(e.intend)  s += '<div class="k">託した願い</div><p>'+esc(e.intend)+'</p>';
+    return s + '</div>';
+  }
+  function modalHTML(){
+    if(!modal) return '';
+    var inner = '';
+    if(modal.type === 'cleanse'){
+      var st = STEPS[modal.step];
+      inner = '<div class="ph serif">'+st[0]+'</div><h3 class="serif">'+st[1]+'</h3><p class="serif">'+st[2]+'</p>'+
+        '<button class="go" data-act="next">'+(modal.step===3 ? '完了して記録する' : '次へ進む')+'</button>'+
+        '<div style="margin-top:12px"><button class="gh" data-act="close">やめる</button></div>';
+    } else if(modal.type === 'profiles'){
+      var list = '';
+      profiles.forEach(function(p){
+        list += '<div class="it"><span>'+esc(p.name)+'（'+zodiac(p.birth)+'）<span class="badge" style="margin-left:6px">'+esc(p.rel)+'</span></span>'+
+          (profiles.length>1 ? '<button class="del" data-del="'+esc(p.id)+'">削除</button>' : '')+'</div>';
+      });
+      inner = '<h3 class="serif">プロファイルの追加・管理</h3><div class="plist left">'+list+'</div>'+
+        '<div class="left"><label class="f">名前</label><input type="text" id="pn" placeholder="例：さくら" />'+
+        '<label class="f">誕生日</label><input type="date" id="pb" />'+
+        '<label class="f">関係</label><select id="pr"><option>自分</option><option>パートナー</option><option>家族</option><option>友人</option><option>取引先</option></select></div>'+
+        '<button class="go" data-act="addp">追加する</button>'+
+        '<div style="margin-top:12px"><button class="gh" data-act="close">閉じる</button></div>';
+    } else if(modal.type === 'all'){
+      var all = entries.length ? entries.map(recHTML).join('') : '<div class="empty">まだ記録がありません</div>';
+      inner = '<h3 class="serif">静かな調和録（すべて）</h3><div class="left">'+all+'</div>'+
+        '<div style="margin-top:14px"><button class="gh" data-act="close">閉じる</button></div>';
+    } else if(modal.type === 'pro'){
+      inner = '<h3 class="serif">Proメンバーシップ</h3><p>現在準備中です。<br>公開までもうしばらくお待ちください。</p>'+
+        '<div style="margin-top:14px"><button class="gh" data-act="close">閉じる</button></div>';
+    } else if(modal.type === 'info'){
+      inner = '<h3 class="serif">利用案内・想い</h3>'+
+        '<p class="left serif">ほしピカは、月のリズムを目安に、心に浮かぶ思いを静かに書き出して整えるためのノートです。</p>'+
+        '<p class="left serif">書いた内容はこの端末のブラウザ内にだけ保存され、外部には送信されません。</p>'+
+        '<p class="left serif">占いや医療・治療を目的としたものではありません。心身の不調が続くときは、専門家にご相談ください。</p>'+
+        '<div style="margin-top:14px"><button class="gh" data-act="close">閉じる</button></div>';
+    }
+    return '<div class="ov"><div class="box">'+inner+'</div></div>';
+  }
+
+  function render(){
+    var m = moonInfo(new Date());
+    var p = activeProfile();
+    var chips = profiles.map(function(x){
+      return '<button class="chip'+(x.id===activeId?' on':'')+'" data-pid="'+esc(x.id)+'">'+esc(x.name)+'</button>';
+    }).join('');
+    var recent = entries.slice(0,3).map(recHTML).join('') || '<div class="empty">まだ記録がありません</div>';
+    var status = playing ? playing+'Hz 再生中' : '静寂 (オフ)';
+
+    document.getElementById('app').innerHTML =
+      '<div class="top serif"><span>SAKURA WORKS</span><span>星の案内人 千鈴龍穂</span></div>'+
+      '<h1 class="serif">ほしピカ</h1>'+
+      '<p class="lead serif">〜星の気配と、こころが凪ぐ静かなノート〜</p>'+
+
+      '<section class="card">'+
+        '<div class="moon-wrap">'+moonSVG(m.age)+'</div>'+
+        '<div class="pill serif"><b>'+esc(m.jp)+' ('+esc(m.en)+')</b> &nbsp;|&nbsp; <b>月齢 '+m.age.toFixed(1)+'</b></div>'+
+        '<div class="msg serif"><h3>千鈴龍穂の静かなメッセージ</h3>'+esc(m.msg)+'</div>'+
+      '</section>'+
+
+      '<section class="card sound">'+
+        '<div class="disc'+(playing?' on':'')+'"></div>'+
+        '<div class="t serif">調和の周波数 (Web Sound)<small>'+status+'</small></div>'+
+        '<button class="hz'+(playing===432?' on':'')+'" data-hz="432">432Hz<small>心身</small></button>'+
+        '<button class="hz'+(playing===528?' on':'')+'" data-hz="528">528Hz<small>変容</small></button>'+
+      '</section>'+
+
+      '<section class="card">'+
+        '<div class="row"><span class="ttl serif">👤 対象のプロファイル</span><button class="link" data-act="profiles">＋ 追加・管理</button></div>'+
+        '<div class="chips">'+chips+'</div>'+
+        '<div class="cur"><span>'+esc(p.name)+' <small>（'+zodiac(p.birth)+'）</small></span><span class="badge">'+esc(p.rel)+'</span></div>'+
+      '</section>'+
+
+      '<section class="card">'+
+        '<div class="row"><span class="ttl serif">🌸 四相調和・記憶のクリーニング</span><button class="link" data-act="reset" style="color:var(--text)">ゼロリセット</button></div>'+
+        '<label class="f serif">手放したい記憶・心の重み<small>(インナーチャイルドのノイズ)</small></label>'+
+        '<textarea id="t1" placeholder="手放したい感情、モヤモヤ、過去の記憶を静かに置いてください...">'+esc(releaseText)+'</textarea>'+
+        '<label class="f serif">託したい光・調和の願い<small>(純粋な意図)</small></label>'+
+        '<textarea id="t2" placeholder="整えられた未来の姿、感謝したい思い...">'+esc(intendText)+'</textarea>'+
+        '<button class="go" data-act="start"'+((releaseText.trim()||intendText.trim())?'':' disabled')+'>調和のプロセスをはじめる</button>'+
+      '</section>'+
+
+      '<section class="card">'+
+        '<div class="row"><span class="ttl serif">🔖 静かな調和録 (直近)</span><button class="link" data-act="all" style="color:var(--text)">すべて見る ('+entries.length+')</button></div>'+
+        recent+
+      '</section>'+
+
+      '<footer>'+
+        '<div class="links"><button data-act="pro">Proメンバーシップ</button><span>・</span><button data-act="backup">バックアップ</button><span>・</span><button data-act="info">利用案内・想い</button></div>'+
+        '<div class="cr">Produced by SAKURA WORKS | Guide: 千鈴龍穂 (Senrei Ryusui)</div>'+
+      '</footer>'+
+      modalHTML();
+
+    bind();
+  }
+
+  /* ---------- 操作 ---------- */
+  function bind(){
+    var app = document.getElementById('app');
+
+    var t1 = document.getElementById('t1'), t2 = document.getElementById('t2');
+    function refreshBtn(){
+      var b = app.querySelector('[data-act="start"]');
+      if(b) b.disabled = !(releaseText.trim() || intendText.trim());
+    }
+    if(t1) t1.addEventListener('input', function(){ releaseText = t1.value; refreshBtn(); });
+    if(t2) t2.addEventListener('input', function(){ intendText = t2.value; refreshBtn(); });
+
+    Array.prototype.forEach.call(app.querySelectorAll('[data-pid]'), function(el){
+      el.addEventListener('click', function(){ activeId = el.getAttribute('data-pid'); render(); });
+    });
+    Array.prototype.forEach.call(app.querySelectorAll('[data-hz]'), function(el){
+      el.addEventListener('click', function(){ toggleSound(parseInt(el.getAttribute('data-hz'),10)); });
+    });
+    Array.prototype.forEach.call(app.querySelectorAll('[data-del]'), function(el){
+      el.addEventListener('click', function(){
+        var id = el.getAttribute('data-del');
+        profiles = profiles.filter(function(x){ return x.id !== id; });
+        if(activeId === id) activeId = profiles[0].id;
+        save('hoshi_pika_profiles_v2', profiles);
+        render();
+      });
+    });
+    Array.prototype.forEach.call(app.querySelectorAll('[data-act]'), function(el){
+      el.addEventListener('click', function(){ act(el.getAttribute('data-act')); });
+    });
+  }
+
+  function act(a){
+    if(a === 'start'){
+      if(!(releaseText.trim() || intendText.trim())) return;
+      modal = {type:'cleanse', step:0}; render();
+    } else if(a === 'next'){
+      if(modal.step < 3){ modal.step++; render(); }
+      else {
+        var p = activeProfile();
+        entries.unshift({
+          id: String(Date.now()), profileName: p.name,
+          release: releaseText.trim(), intend: intendText.trim(),
+          moon: moonInfo(new Date()).jp, createdAt: new Date().toISOString()
+        });
+        save('hoshi_pika_entries_v2', entries);
+        releaseText = ''; intendText = ''; modal = null; render();
+      }
+    } else if(a === 'close'){ modal = null; render(); }
+    else if(a === 'reset'){ releaseText = ''; intendText = ''; render(); }
+    else if(a === 'profiles'){ modal = {type:'profiles'}; render(); }
+    else if(a === 'all'){ modal = {type:'all'}; render(); }
+    else if(a === 'pro'){ modal = {type:'pro'}; render(); }
+    else if(a === 'info'){ modal = {type:'info'}; render(); }
+    else if(a === 'addp'){
+      var n = document.getElementById('pn').value.trim();
+      var b = document.getElementById('pb').value;
+      var r = document.getElementById('pr').value;
+      if(!n) return;
+      var id = 'p' + Date.now();
+      profiles.push({id:id, name:n, birth:b, rel:r});
+      save('hoshi_pika_profiles_v2', profiles);
+      activeId = id; modal = null; render();
+    } else if(a === 'backup'){
+      try{
+        var data = JSON.stringify({profiles:profiles, entries:entries}, null, 2);
+        var blob = new Blob([data], {type:'application/json'});
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url; link.download = 'hoshi-pika-backup.json';
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      }catch(e){}
+    }
+  }
+
+  render();
+})();
+</script>
 </body>
 </html>
