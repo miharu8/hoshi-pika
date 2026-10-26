@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ほしピカ 〜星のナビで、いつでも気分上々ノート〜</title>
+  
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d1117" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap');
+    body {
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      background-color: #0d1117;
+      color: #e6edf3;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-serif-jp { font-family: 'Shippori Mincho', serif; }
+    .glass-card {
+      background: rgba(22, 27, 34, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .sakura-gradient {
+      background: linear-gradient(135deg, #f472b6 0%, #fb7185 100%);
+    }
+    .gold-text {
+      color: #fef08a;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center">
+  <div id="root" class="w-full max-w-md min-h-screen flex flex-col relative pb-20"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // 月齢計算
+    const getMoonPhaseData = (date = new Date()) => {
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const c = Math.floor(year / 100);
+      const e = 2 - c + Math.floor(c / 4);
+      const jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + e - 1524.5;
+      const daysSinceNew = jd - 2451549.5;
+      const newMoons = daysSinceNew / 29.53058770576;
+      const cycleFraction = newMoons - Math.floor(newMoons);
+      const age = Math.round(cycleFraction * 29.53058770576 * 10) / 10;
+      
+      let phaseName = '満月（Full Moon）';
+      let guidance = '記憶と感情が満ちる刻。感謝と共にゼロへ戻しましょう。';
+
+      if (age < 1.8 || age >= 28.5) {
+        phaseName = '新月（New Moon）';
+        phaseName = '新月';
+        guidance = '静かに心を整え、純粋な問いを蒔くタイミングです。';
+      } else if (age < 7.4) {
+        phaseName = '三日月';
+        guidance = '直感を素直に受け取り、軽やかに一歩踏み出しましょう。';
+      } else if (age < 14.8) {
+        phaseName = '上弦の月';
+        phaseName = '満ちゆく月';
+        guidance = '思考のノイズを手放し、愛と調和で心を満たします。';
+      } else if (age < 22.1) {
+        phaseName = '下弦の月';
+        guidance = '不要になった緊張や執着を深く息を吐くように手放す時。';
+      }
+
+      return { age, phaseName, guidance };
+    };
+
+    // 星座計算
+    const getZodiacSign = (dateString) => {
+      if (!dateString) return '未設定';
+      const [, mStr, dStr] = dateString.split('-');
+      const m = parseInt(mStr, 10);
+      const d = parseInt(dStr, 10);
+      if ((m === 3 && d >= 21) || (m === 4 && d <= 19)) return '牡羊座';
+      if ((m === 4 && d >= 20) || (m === 5 && d <= 20)) return '牡牛座';
+      if ((m === 5 && d >= 21) || (m === 6 && d <= 21)) return '双子座';
+      if ((m === 6 && d >= 22) || (m === 7 && d <= 22)) return '蟹座';
+      if ((m === 7 && d >= 23) || (m === 8 && d <= 22)) return '獅子座';
+      if ((m === 8 && d >= 23) || (m === 9 && d <= 22)) return '乙女座';
+      if ((m === 9 && d >= 23) || (m === 10 && d <= 23)) return '天秤座';
+      if ((m === 10 && d >= 24) || (m === 11 && d <= 22)) return '蠍座';
+      if ((m === 11 && d >= 23) || (m === 12 && d <= 21)) return '射手座';
+      if ((m === 12 && d >= 22) || (m === 1 && d <= 19)) return '山羊座';
+      if ((m === 1 && d >= 20) || (m === 2 && d <= 18)) return '水瓶座';
+      return '魚座';
+    };
+
+    // 月グラフィック
+    const MoonGraphic = ({ age }) => {
+      const radius = 22;
+      const center = 26;
+      const cycle = age / 29.5305877;
+      const phaseAngle = cycle * 2 * Math.PI;
+
+      let darkPath = "";
+      if (cycle < 0.5) {
+        darkPath = `M ${center} ${center - radius} A ${radius} ${radius} 0 0 1 ${center} ${center + radius} A ${radius} ${radius} 0 0 0 ${center} ${center - radius}`;
+      } else {
+        darkPath = `M ${center} ${center - radius} A ${radius} ${radius} 0 0 0 ${center} ${center + radius} A ${radius} ${radius} 0 0 1 ${center} ${center - radius}`;
+      }
+
+      return (
+        <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
+          <svg viewBox="0 0 52 52" className="w-12 h-12 drop-shadow-[0_0_6px_rgba(254,240,138,0.4)]">
+            <circle cx={center} cy={center} r={radius} fill="#fef08a" />
+            {(cycle < 0.48 || cycle > 0.52) && (
+              <path d={darkPath} fill="#0d1117" opacity="0.92" />
+            )}
+            <circle cx={center} cy={center} r={radius} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+          </svg>
+        </div>
+      );
+    };
+
+    function App() {
+      const [profiles, setProfiles] = useState(() => {
+        const saved = localStorage.getItem('hoshi_pika_profiles');
+        return saved ? JSON.parse(saved) : [
+          { id: 'self', name: '自分（あなた）', birth: '1990-01-01', relation: 'Self' },
+          { id: 'partner', name: 'パートナー / 取引先', birth: '1988-05-15', relation: 'Partner' }
+        ];
+      });
+
+      const [activeProfileId, setActiveProfileId] = useState('self');
+      const [entries, setEntries] = useState(() => {
+        const saved = localStorage.getItem('hoshi_pika_entries');
+        return saved ? JSON.parse(saved) : [];
+      });
+
+      const [activeTab, setActiveTab] = useState('reflect');
+      const [isCleansingModalOpen, setIsCleansingModalOpen] = useState(false);
+      const [cleansingStep, setCleansingStep] = useState(0);
+      const [inputText, setInputText] = useState('');
+      const [inputType, setInputType] = useState('release');
+      const [isPlayingSound, setIsPlayingSound] = useState(false);
+      const [soundFreq, setSoundFreq] = useState(432);
+
+      const audioCtxRef = useRef(null);
+      const oscRef = useRef(null);
+
+      const moon = useMemo(() => getMoonPhaseData(), []);
+      const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
+      const activeZodiac = getZodiacSign(activeProfile.birth);
+
+      useEffect(() => {
+        localStorage.setItem('hoshi_pika_profiles', JSON.stringify(profiles));
+      }, [profiles]);
+
+      useEffect(() => {
+        localStorage.setItem('hoshi_pika_entries', JSON.stringify(entries));
+      }, [entries]);
+
+      const toggleSound = (freq) => {
+        if (isPlayingSound && soundFreq === freq) {
+          if (oscRef.current) oscRef.current.stop();
+          setIsPlayingSound(false);
+          return;
+        }
+
+        if (oscRef.current) oscRef.current.stop();
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        const osc = audioCtxRef.current.createOscillator();
+        const gain = audioCtxRef.current.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtxRef.current.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtxRef.current.currentTime);
+
+        osc.connect(gain);
+        gain.connect(audioCtxRef.current.destination);
+
+        osc.start();
+        oscRef.current = osc;
+        setSoundFreq(freq);
+        setIsPlayingSound(true);
+      };
+
+      const advanceCleansing = () => {
+        if (cleansingStep < 4) {
+          setCleansingStep(prev => prev + 1);
+        } else {
+          const newEntry = {
+            id: Date.now().toString(),
+            profileName: activeProfile.name,
+            text: inputText,
+            type: inputType,
+            moonPhase: moon.phaseName,
+            createdAt: new Date().toISOString()
+          };
+          setEntries([newEntry, ...entries]);
+          setInputText('');
+          setIsCleansingModalOpen(false);
+          setCleansingStep(0);
+        }
+      };
+
+      return (
+        <div className="flex-1 flex flex-col p-4 text-slate-100">
+          <!-- ヘッダー -->
+          <header className="flex justify-between items-center py-2 border-b border-slate-800/80 mb-3">
+            <span className="text-xs tracking-widest text-slate-400 font-serif-jp uppercase">SAKURA WORKS</span>
+            <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">ver 1.0</span>
+          </header>
+
+          <!-- タイトル -->
+          <div className="text-center my-2">
+            <h1 className="text-2xl font-bold font-serif-jp tracking-wider gold-text">ほしピカ</h1>
+            <p className="text-xs text-slate-400 mt-1 font-light">〜星のナビで、いつでも気分上々ノート〜</p>
+          </div>
+
+          <!-- 月＆案内人 -->
+          <div className="glass-card rounded-2xl p-4 my-3">
+            <div className="flex items-center space-x-3">
+              <MoonGraphic age={moon.age} />
+              <div className="flex-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-semibold text-amber-200">{moon.phaseName}</span>
+                  <span className="text-[10px] text-slate-400">月齢 {moon.age}</span>
+                </div>
+                <p className="mt-1 text-xs text-slate-300 leading-relaxed font-serif-jp">{moon.guidance}</p>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-slate-800/60 text-slate-300 text-[11px] leading-relaxed">
+              <span className="text-pink-300 font-medium">星の案内人（千鈴龍穂）：</span> 
+              「心に浮かぶ事象を静かに置き、ただゼロの調和へと戻していきましょう。」
+            </div>
+          </div>
+
+          <!-- プロファイル切替 -->
+          <div className="flex space-x-2 my-2 overflow-x-auto pb-1">
+            {profiles.map(p => (
+              <button
+                key={p.id}
+                onClick={() => setActiveProfileId(p.id)}
+                className={`px-3 py-1.5 rounded-full text-xs transition-all ${
+                  activeProfileId === p.id 
+                    ? 'bg-gradient-to-r from-pink-500/20 to-amber-500/20 text-pink-200 border border-pink-500/40' 
+                    : 'bg-slate-800/60 text-slate-400'
+                }`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex justify-between text-[11px] text-slate-400 px-1 mb-3">
+            <span>対象: <strong className="text-slate-200">{activeProfile.name}</strong></span>
+            <span>太陽星座: <strong className="text-amber-300">{activeZodiac}</strong></span>
+          </div>
+
+          <!-- メイン機能 -->
+          {activeTab === 'reflect' && (
+            <div className="glass-card rounded-2xl p-4 flex-1 flex flex-col">
+              <div className="flex border-b border-slate-800 mb-3">
+                <button 
+                  onClick={() => setInputType('release')}
+                  className={`pb-2 px-3 text-xs font-medium border-b-2 ${
+                    inputType === 'release' ? 'border-pink-500 text-pink-300' : 'border-transparent text-slate-500'
+                  }`}
+                >
+                  モヤモヤ（手放し）
+                </button>
+                <button 
+                  onClick={() => setInputType('intend')}
+                  className={`pb-2 px-3 text-xs font-medium border-b-2 ${
+                    inputType === 'intend' ? 'border-amber-400 text-amber-200' : 'border-transparent text-slate-500'
+                  }`}
+                >
+                  願い・整え（意図）
+                </button>
+              </div>
+
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder={
+                  inputType === 'release'
+                    ? "手放したい感情や人間関係のモヤモヤを書き出してみてください..."
+                    : "叶えたい願いや本来の自分に戻ったクリアな意図を入力してください..."
+                }
+                className="w-full flex-1 bg-slate-900/60 text-slate-200 rounded-xl p-3 text-xs focus:outline-none resize-none border border-slate-800 font-serif-jp min-h-[120px]"
+              ></textarea>
+
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={() => { setCleansingStep(1); setIsCleansingModalOpen(true); }}
+                  disabled={!inputText.trim()}
+                  className="sakura-gradient disabled:opacity-40 text-white font-medium text-xs px-5 py-2.5 rounded-xl shadow-lg"
+                >
+                  四相調和（ゼロ化）へ進む
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'history' && (
+            <div className="glass-card rounded-2xl p-4 flex-1 overflow-y-auto max-h-[380px]">
+              <h3 className="text-xs font-semibold text-slate-300 mb-3">直感録（調和の記録）</h3>
+              {entries.length === 0 ? (
+                <div className="text-center py-10 text-slate-500 text-xs">まだ記録はありません</div>
+              ) : (
+                <div className="space-y-2.5">
+                  {entries.map(e => (
+                    <div key={e.id} className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
+                      <div className="flex justify-between text-[10px] text-slate-400">
+                        <span className="text-pink-300">{e.profileName}</span>
+                        <span>{new Date(e.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-slate-200 font-serif-jp">{e.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'sound' && (
+            <div className="glass-card rounded-2xl p-6 flex-1 flex flex-col justify-center items-center text-center space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold font-serif-jp text-slate-200">調和周波数サウンダー</h3>
+                <p className="text-xs text-slate-400 mt-1">ソルフェジオ周波数で心を静かに整えます</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 w-full">
+                <button
+                  onClick={() => toggleSound(432)}
+                  className={`p-4 rounded-xl border flex flex-col items-center ${
+                    isPlayingSound && soundFreq === 432 ? 'bg-pink-500/20 border-pink-500 text-pink-200' : 'bg-slate-900 border-slate-800 text-slate-300'
+                  }`}
+                >
+                  <span className="text-base font-bold font-serif-jp">432 Hz</span>
+                  <span className="text-[10px] text-slate-400 mt-1">深い安らぎ</span>
+                </button>
+
+                <button
+                  onClick={() => toggleSound(528)}
+                  className={`p-4 rounded-xl border flex flex-col items-center ${
+                    isPlayingSound && soundFreq === 528 ? 'bg-amber-500/20 border-amber-500 text-amber-200' : 'bg-slate-900 border-slate-800 text-slate-300'
+                  }`}
+                >
+                  <span className="text-base font-bold font-serif-jp">528 Hz</span>
+                  <span className="text-[10px] text-slate-400 mt-1">記憶の解放</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          <!-- 下部ナビ -->
+          <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/95 border-t border-slate-800 max-w-md mx-auto py-2 grid grid-cols-3 text-center text-[10px]">
+            <button onClick={() => setActiveTab('reflect')} className={activeTab === 'reflect' ? 'text-pink-400' : 'text-slate-500'}>✨ ゼロ化</button>
+            <button onClick={() => setActiveTab('history')} className={activeTab === 'history' ? 'text-pink-400' : 'text-slate-500'}>📖 直感録</button>
+            <button onClick={() => setActiveTab('sound')} className={activeTab === 'sound' ? 'text-pink-400' : 'text-slate-500'}>🎵 周波数</button>
+          </nav>
+
+          <!-- モーダル -->
+          {isCleansingModalOpen && (
+            <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="glass-card rounded-2xl max-w-sm w-full p-6 text-center space-y-4">
+                {cleansingStep === 1 && (
+                  <>
+                    <span className="text-xs text-pink-300 font-serif-jp">Phase 1 : 受容（Acceptance）</span>
+                    <h3 className="text-base font-serif-jp text-slate-100">ありのままを受け止める</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed font-serif-jp">「どのような感情も記憶も否定せず、ただここに置きます。」</p>
+                  </>
+                )}
+
+                {cleansingStep === 2 && (
+                  <>
+                    <span className="text-xs text-pink-300 font-serif-jp">Phase 2 : 許し（Forgiveness）</span>
+                    <h3 className="text-base font-serif-jp text-slate-100">ウニヒピリへの呼びかけ</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed font-serif-jp">「ごめんなさい。許してください。記憶のノイズを優しく包みます。」</p>
+                  </>
+                )}
+
+                {cleansingStep === 3 && (
+                  <>
+                    <span className="text-xs text-pink-300 font-serif-jp">Phase 3 : ゼロ（Zero State）</span>
+                    <h3 className="text-base font-serif-jp text-slate-100">空（Zero）への還元</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed font-serif-jp">「愛しています。執着や記憶データはまっさらな零に戻ります。」</p>
+                  </>
+                )}
+
+                {cleansingStep === 4 && (
+                  <>
+                    <span className="text-xs text-pink-300 font-serif-jp">Phase 4 : 感謝（Gratitude）</span>
+                    <h3 className="text-base font-serif-jp text-slate-100">調和の完了</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed font-serif-jp">「ありがとうございます。内側は美しくクリアに整いました。」</p>
+                  </>
+                )}
+
+                <button
+                  onClick={advanceCleansing}
+                  className="w-full py-3 rounded-xl sakura-gradient text-white text-xs font-medium shadow-lg mt-2"
+                >
+                  {cleansingStep === 4 ? "完了して保存" : "次へ進む"}
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
