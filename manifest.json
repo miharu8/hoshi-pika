@@ -1,0 +1,16 @@
+{
+  "name": "ほしピカ",
+  "short_name": "ほしピカ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "description": "星のナビで、いつでも気分上々ノート (SAKURA WORKS)",
+  "icons": [
+    {
+      "src": "https://api.iconify.design/lucide:sparkles.svg?color=%23f472b6",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
