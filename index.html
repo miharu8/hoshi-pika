@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ほしピカ 〜星のナビで、いつでも気分上々ノート〜</title>
+  
+  <!-- PWA & Mobile settings -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d1117" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ほしピカ" />
+
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- React & Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap');
+    
+    body {
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      background-color: #0d1117;
+      color: #e6edf3;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-serif-jp {
+      font-family: 'Shippori Mincho', serif;
+    }
+    .glass-card {
+      background: rgba(22, 27, 34, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .sakura-gradient {
+      background: linear-gradient(135deg, #f472b6 0%, #fb7185 100%);
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #fef08a 0%, #fde047 50%, #eab308 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center selection:bg-pink-500/30">
+  <div id="root" class="w-full max-w-md min-h-screen flex flex-col relative pb-20"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // --- 月齢・月相計算ユーティリティ ---
+    const getMoonPhaseData = (date = new Date()) => {
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      
+      const c = Math.floor(year / 100);
+      const e = 2 - c + Math.floor(c / 4);
+      const jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + e - 1524.5;
+      const daysSinceNew = jd - 2451549.5;
+      const newMoons = daysSinceNew / 29.53058770576;
+      const cycleFraction = newMoons - Math.floor(newMoons);
+      const age = Math.round(cycleFraction * 29.53058770576 * 10) / 10;
+      
+      let phaseName = '';
+      let phaseCode = '';
+      let guidance = '';
+
+      if (age < 1.8 || age >= 28.5) {
+        phaseName = '新月（New Moon）';
+        phaseCode = 'NEW';
+        guidance = '内側のクリアリングと、新たな問いを静かに蒔く刻。';
+      } else if (age < 7.4) {
+        phaseName = '三日月・満ちゆく月';
+        phaseCode = 'WAXING_CRESCENT';
+        guidance = '直感を素直に受け取り、整えた心で一歩踏み出す時。';
+      } else if (age < 11.1) {
+        phaseName = '上弦の月';
+        phaseCode = 'FIRST_QUARTER';
+        guidance = '迷いやブレを優しく手放し、軸を整える調和のポイント。';
+      } else if (age < 14.8) {
+        phaseName = '十三夜・膨らむ月';
+        phaseCode = 'WAXING_GIBBOUS';
+        guidance = '満ちるエネルギーを受け取る準備。愛と感謝で満たしましょう。';
+      } else if (age < 16.6) {
+        phaseName = '満月（Full Moon）';
+        phaseCode = 'FULL';
+        guidance = '感情と記憶が最高潮に満ちる刻。感謝と共にゼロに戻すタイミングです。';
+      } else if (age < 22.1) {
+        phaseName = '欠けゆく月';
+        phaseCode = 'WANING_GIBBOUS';
+        guidance = '不要になった記憶や緊張を、深く呼吸するように手放す時。';
+      } else if (age < 25.8) {
+        phaseName = '下弦の月';
+        phaseCode = 'LAST_QUARTER';
+        guidance = '許しと浄化。心の中のノイズを完全にクリアにする調和の刻。';
+      } else {
+        phaseName = '鎮まりゆく月';
+        phaseCode = 'WANING_CRESCENT';
+        guidance = '次のサイクルに向けて、心身を静かに休ませ凪の状態へ。';
+      }
+
+      return { age, phaseName, phaseCode, guidance };
+    };
+
+    // --- 星座計算ユーティリティ ---
+    const getZodiacSign = (dateString) => {
+      if (!dateString) return '未設定';
+      const [, mStr, dStr] = dateString.split('-');
+      const m = parseInt(mStr, 10);
+      const d = parseInt(dStr, 10);
+
+      if ((m === 3 && d >= 21) || (m === 4 && d <= 19)) return '牡羊座';
+      if ((m === 4 && d >= 20) || (m === 5 && d <= 20)) return '牡牛座';
+      if ((m === 5 && d >= 21) || (m === 6 && d <= 21)) return '双子座';
+      if ((m === 6 && d >= 22) || (m === 7 && d <= 22)) return '蟹座';
+      if ((m === 7 && d >= 23) || (m === 8 && d <= 22)) return '獅子座';
+      if ((m === 8 && d >= 23) || (m === 9 && d <= 22)) return '乙女座';
+      if ((m === 9 && d >= 23) || (m === 10 && d <= 23)) return '天秤座';
+      if ((m === 10 && d >= 24) || (m === 11 && d <= 22)) return '蠍座';
+      if ((m === 11 && d >= 23) || (m === 12 && d <= 21)) return '射手座';
+      if ((m === 12 && d >= 22) || (m === 1 && d <= 19)) return '山羊座';
+      if ((m === 1 && d >= 20) || (m === 2 && d <= 18)) return '水瓶座';
+      return '魚座';
+    };
+
+    // --- SVG月形コンポーネント ---
+    const MoonGraphic = ({ age }) => {
+      const radius = 24;
+      const center = 28;
+      const cycle = age / 29.5305877;
+      const phaseAngle = cycle * 2 * Math.PI;
+
+      let darkPath = "";
+      if (cycle < 0.5) {
+        const x = center + radius * Math.cos(phaseAngle);
+        darkPath = `M ${center} ${center - radius} A ${radius} ${radius} 0 0 1 ${center} ${center + radius} A ${radius} ${radius} 0 0 0 ${center} ${center - radius}`;
+      } else {
+        const x = center - radius * Math.cos(phaseAngle);
+        darkPath = `M ${center} ${center - radius} A ${radius} ${radius} 0 0 0 ${center} ${center + radius} A ${radius} ${radius} 0 0 1 ${center} ${center - radius}`;
+      }
+
+      return (
+        <div class="relative w-14 h-14 flex items-center justify-center">
+          <svg viewBox="0 0 56 56" class="w-14 h-14 drop-shadow-[0_0_8px_rgba(254,240,138,0.3)]">
+            <circle cx={center} cy={center} r={radius} fill="#fef08a" />
+            {(cycle < 0.48 || cycle > 0.52) && (
+              <path d={darkPath} fill="#111827" opacity="0.9" />
+            )}
+            <circle cx={center} cy={center} r={radius} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+          </svg>
+        </div>
+      );
+    };
+
+    // --- メインアプリケーション ---
+    function App() {
+      // 状態管理
+      const [profiles, setProfiles] = useState(() => {
+        const saved = localStorage.getItem('hoshi_pika_profiles');
+        return saved ? JSON.parse(saved) : [
+          { id: 'self', name: '自分（あなた）', birth: '1990-01-01', relation: 'Self' },
+          { id: 'partner', name: 'パートナー / 取引先', birth: '1988-05-15', relation: 'Partner' }
+        ];
+      });
+
+      const [activeProfileId, setActiveProfileId] = useState('self');
+      const [isPro, setIsPro] = useState(() => localStorage.getItem('hoshi_pika_is_pro') === 'true');
+      const [entries, setEntries] = useState(() => {
+        const saved = localStorage.getItem('hoshi_pika_entries');
+        return saved ? JSON.parse(saved) : [];
+      });
+
+      // UI表示フラグ
+      const [activeTab, setActiveTab] = useState('reflect'); // reflect, history, sound, profile
+      const [isCleansingModalOpen, setIsCleansingModalOpen] = useState(false);
+      const [cleansingStep, setCleansingStep] = useState(0); // 0: 入力, 1: 受容, 2: 許し, 3: ゼロ, 4: 感謝
+      const [inputText, setInputText] = useState('');
+      const [inputType, setInputType] = useState('release'); // release or intend
+      const [isPlayingSound, setIsPlayingSound] = useState(false);
+      const [soundFreq, setSoundFreq] = useState(432);
+      const [showAbout, setShowAbout] = useState(false);
+      const [showProModal, setShowProModal] = useState(false);
+
+      const audioCtxRef = useRef(null);
+      const oscRef = useRef(null);
+
+      // 月情報
+      const moon = useMemo(() => getMoonPhaseData(), []);
+      const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
+      const activeZodiac = getZodiacSign(activeProfile.birth);
+
+      // 保存処理
+      useEffect(() => {
+        localStorage.setItem('hoshi_pika_profiles', JSON.stringify(profiles));
+      }, [profiles]);
+
+      useEffect(() => {
+        localStorage.setItem('hoshi_pika_entries', JSON.stringify(entries));
+      }, [entries]);
+
+      useEffect(() => {
+        localStorage.setItem('hoshi_pika_is_pro', isPro);
+      }, [isPro]);
+
+      // アイコン初期化
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+
+      // サウンド発生
+      const toggleSound = (freq) => {
+        if (isPlayingSound && soundFreq === freq) {
+          if (oscRef.current) oscRef.current.stop();
+          setIsPlayingSound(false);
+          return;
+        }
+
+        if (oscRef.current) oscRef.current.stop();
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        const osc = audioCtxRef.current.createOscillator();
+        const gain = audioCtxRef.current.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtxRef.current.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtxRef.current.currentTime);
+
+        osc.connect(gain);
+        gain.connect(audioCtxRef.current.destination);
+
+        osc.start();
+        oscRef.current = osc;
+        setSoundFreq(freq);
+        setIsPlayingSound(true);
+      };
+
+      // 四相調和（ホ・オポノポノ）プロセス開始
+      const startCleansing = () => {
+        if (!inputText.trim()) return;
+        setCleansingStep(1);
+        setIsCleansingModalOpen(true);
+      };
+
+      const advanceCleansing = () => {
+        if (cleansingStep < 4) {
+          setCleansingStep(prev => prev + 1);
+        } else {
+          // 完了ログ記録
+          const newEntry = {
+            id: Date.now().toString(),
+            profileId: activeProfileId,
+            profileName: activeProfile.name,
+            text: inputText,
+            type: inputType,
+            moonAge: moon.age,
+            moonPhase: moon.phaseName,
+            createdAt: new Date().toISOString()
+          };
+          setEntries([newEntry, ...entries]);
+          setInputText('');
+          setIsCleansingModalOpen(false);
+          setCleansingStep(0);
+        }
+      };
+
+      return (
+        <div class="flex-1 flex flex-col p-4 text-slate-100">
+          
+          <!-- ブランドヘッダー（隠れ家サロン調） -->
+          <header class="flex justify-between items-center py-2 px-1 border-b border-slate-800/80 mb-4">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs tracking-widest text-slate-400 font-serif-jp uppercase">Sakura Works</span>
+              <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">ver 1.0</span>
+            </div>
+            <button 
+              onClick={() => setShowAbout(true)}
+              class="text-xs text-slate-400 hover:text-slate-200 transition-colors flex items-center space-x-1"
+            >
+              <i data-lucide="info" class="w-3.5 h-3.5"></i>
+              <span>About</span>
+            </button>
+          </header>
+
+          <!-- メインタイトル＆サブタイトル -->
+          <div class="text-center my-3">
+            <h1 class="text-2xl font-bold font-serif-jp tracking-wider gold-gradient-text flex items-center justify-center space-x-2">
+              <span>ほしピカ</span>
+            </h1>
+            <p class="text-xs text-slate-400 mt-1 font-light tracking-wide">
+              〜星のナビで、いつでも気分上々ノート〜
+            </p>
+          </div>
+
+          <!-- 今日の月＆案内人（千鈴龍穂）メッセージ -->
+          <div class="glass-card rounded-2xl p-4 my-3 relative overflow-hidden">
+            <div class="flex items-center space-x-4">
+              <MoonGraphic age={moon.age} />
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-semibold text-amber-200/90 tracking-wider">{moon.phaseName}</span>
+                  <span class="text-[11px] text-slate-400">月齢 {moon.age}</span>
+                </div>
+                <div class="mt-1 text-xs text-slate-300 leading-relaxed font-serif-jp">
+                  {moon.guidance}
+                </div>
+              </div>
+            </div>
+
+            <!-- さりげない案内人メッセージ -->
+            <div class="mt-3 pt-3 border-t border-slate-800/60 flex items-start space-x-2 text-slate-300">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-pink-400 mt-0.5 flex-shrink-0"></i>
+              <p class="text-[11px] leading-relaxed italic">
+                <span class="font-medium text-pink-300">星の案内人（千鈴龍穂）：</span> 
+                「心に浮かぶ事象をそのまま置き、ただゼロの調和へと戻していきましょう。」
+              </p>
+            </div>
+          </div>
+
+          <!-- 対象プロファイル選択タブ -->
+          <div class="flex items-center justify-between my-2 px-1">
+            <div class="flex space-x-1 overflow-x-auto scrollbar-none py-1">
+              {profiles.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => setActiveProfileId(p.id)}
+                  class={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center space-x-1 ${
+                    activeProfileId === p.id 
+                      ? 'bg-gradient-to-r from-pink-500/20 to-amber-500/20 text-pink-200 border border-pink-500/30' 
+                      : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  <i data-lucide={p.relation === 'Self' ? 'user' : 'users'} class="w-3 h-3"></i>
+                  <span>{p.name}</span>
+                </button>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => {
+                if (!isPro && profiles.length >= 2) {
+                  setShowProModal(true);
+                } else {
+                  setActiveTab('profile');
+                }
+              }}
+              class="text-xs text-pink-400 hover:text-pink-300 px-2 py-1 rounded border border-pink-500/20 bg-pink-500/5 flex items-center space-x-1 flex-shrink-0 ml-2"
+            >
+              <i data-lucide="plus" class="w-3 h-3"></i>
+              <span>追加</span>
+            </button>
+          </div>
+
+          <!-- アクティブプロファイル情報表示 -->
+          <div class="flex items-center justify-between text-[11px] text-slate-400 px-2 mb-3">
+            <span>対象: <strong class="text-slate-200">{activeProfile.name}</strong></span>
+            <span>太陽星座: <strong class="text-amber-300/90">{activeZodiac}</strong></span>
+          </div>
+
+          <!-- メインタブ切り替え -->
+          {activeTab === 'reflect' && (
+            <div class="flex-1 flex flex-col space-y-4">
+              <!-- モヤモヤ / 願い 入力エリア -->
+              <div class="glass-card rounded-2xl p-4 flex-1 flex flex-col">
+                <div class="flex border-b border-slate-800 mb-3">
+                  <button 
+                    onClick={() => setInputType('release')}
+                    class={`pb-2 px-4 text-xs font-medium border-b-2 transition-all ${
+                      inputType === 'release' 
+                        ? 'border-pink-500 text-pink-300' 
+                        : 'border-transparent text-slate-400 hover:text-slate-300'
+                    }`}
+                  >
+                    モヤモヤ（記憶のリセット）
+                  </button>
+                  <button 
+                    onClick={() => setInputType('intend')}
+                    class={`pb-2 px-4 text-xs font-medium border-b-2 transition-all ${
+                      inputType === 'intend' 
+                        ? 'border-amber-400 text-amber-200' 
+                        : 'border-transparent text-slate-400 hover:text-slate-300'
+                    }`}
+                  >
+                    願い・純化（意図の整え）
+                  </button>
+                </div>
+
+                <textarea
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder={
+                    inputType === 'release'
+                      ? "手放したい出来事やモヤモヤした感情、人間関係のノイズをそのまま書き出してみてください..."
+                      : "叶えたい事象や、本来の自分に戻ったクリアな意図を入力してください..."
+                  }
+                  class="w-full flex-1 bg-slate-900/60 text-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-pink-500/40 resize-none placeholder-slate-500 border border-slate-800/60 font-serif-jp"
+                  rows="5"
+                ></textarea>
+
+                <div class="mt-3 flex justify-between items-center">
+                  <span class="text-[10px] text-slate-500">
+                    ※ 入力内容は外部サーバーへ送信されません
+                  </span>
+                  <button
+                    onClick={startCleansing}
+                    disabled={!inputText.trim()}
+                    class="sakura-gradient hover:opacity-90 disabled:opacity-40 text-white font-medium text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-pink-500/20 transition-all flex items-center space-x-1.5"
+                  >
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                    <span>四相調和（ゼロ化）へ進む</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'history' && (
+            <div class="flex-1 glass-card rounded-2xl p-4 overflow-y-auto max-h-[480px]">
+              <h3 class="text-xs font-semibold text-slate-300 mb-3 flex items-center justify-between">
+                <span>調和の記録（直感録）</span>
+                <span class="text-[10px] text-slate-500">{entries.length} 件</span>
+              </h3>
+
+              {entries.length === 0 ? (
+                <div class="text-center py-12 text-slate-500 text-xs">
+                  まだ調和録はありません。<br/>モヤモヤや願いを入力してゼロ化を行いましょう。
+                </div>
+              ) : (
+                <div class="space-y-3">
+                  {entries.map(entry => (
+                    <div key={entry.id} class="bg-slate-900/80 rounded-xl p-3 border border-slate-800 text-xs space-y-1.5">
+                      <div class="flex justify-between items-center text-[10px] text-slate-400">
+                        <span class="text-pink-300/80">{entry.profileName}</span>
+                        <span>{new Date(entry.createdAt).toLocaleDateString('ja-JP')} ({entry.moonPhase})</span>
+                      </div>
+                      <p class="text-slate-200 font-serif-jp whitespace-pre-wrap leading-relaxed">{entry.text}</p>
+                      <div class="flex justify-end pt-1">
+                        <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-800 text-amber-200/70">
+                          {entry.type === 'release' ? 'クリーニング完了' : '意図純化'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'sound' && (
+            <div class="flex-1 glass-card rounded-2xl p-4 flex flex-col justify-center items-center text-center space-y-6">
+              <div>
+                <h3 class="text-sm font-semibold text-slate-200 font-serif-jp">調和周波数サウンダー</h3>
+                <p class="text-xs text-slate-400 mt-1">ソルフェジオ周波数の音波で、脳と心の緊張を解放します</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4 w-full max-w-xs">
+                <button
+                  onClick={() => toggleSound(432)}
+                  class={`p-4 rounded-xl border flex flex-col items-center justify-center transition-all ${
+                    isPlayingSound && soundFreq === 432
+                      ? 'bg-pink-500/20 border-pink-500 text-pink-200'
+                      : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <span class="text-lg font-bold font-serif-jp">432 Hz</span>
+                  <span class="text-[10px] text-slate-400 mt-1">深い安らぎ・深い調和</span>
+                </button>
+
+                <button
+                  onClick={() => toggleSound(528)}
+                  class={`p-4 rounded-xl border flex flex-col items-center justify-center transition-all ${
+                    isPlayingSound && soundFreq === 528
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-200'
+                      : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <span class="text-lg font-bold font-serif-jp">528 Hz</span>
+                  <span class="text-[10px] text-slate-400 mt-1">意図の変容・記憶解放</span>
+                </button>
+              </div>
+
+              <div class="text-[11px] text-slate-500 max-w-xs">
+                {isPlayingSound ? "🔊 再生中... もう一度タップで停止します" : "タップすると優しいサイン波が再生されます"}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'profile' && (
+            <div class="flex-1 glass-card rounded-2xl p-4">
+              <h3 class="text-xs font-semibold text-slate-300 mb-4">プロファイル一覧</h3>
+              <div class="space-y-3">
+                {profiles.map(p => (
+                  <div key={p.id} class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                    <div>
+                      <div class="font-medium text-slate-200">{p.name}</div>
+                      <div class="text-[10px] text-slate-400">生年月日: {p.birth} ({getZodiacSign(p.birth)})</div>
+                    </div>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">{p.relation}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div class="mt-6 p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-xs">
+                <div class="font-medium text-amber-300 mb-1">Proプランで無制限登録</div>
+                <p class="text-slate-400 text-[11px] leading-relaxed">
+                  Freeプランでは2名まで管理可能です。クライアントや複数取引先を管理するにはPro版へのアップグレードをご利用ください。
+                </p>
+                <button
+                  onClick={() => setShowProModal(true)}
+                  class="mt-3 w-full py-2 bg-gradient-to-r from-amber-500/20 to-pink-500/20 border border-amber-500/30 text-amber-200 text-xs rounded-lg hover:opacity-90"
+                >
+                  Proプラン詳細を見る
+                </button>
+              </div>
+            </div>
+          )}
+
+          <!-- ボトムナビゲーション -->
+          <nav class="fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur-md border-t border-slate-800/80 max-w-md mx-auto z-40">
+            <div class="grid grid-cols-4 py-2">
+              <button
+                onClick={() => setActiveTab('reflect')}
+                class={`flex flex-col items-center py-1 ${activeTab === 'reflect' ? 'text-pink-400' : 'text-slate-500'}`}
+              >
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                <span class="text-[10px] mt-1">調和・ゼロ</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('history')}
+                class={`flex flex-col items-center py-1 ${activeTab === 'history' ? 'text-pink-400' : 'text-slate-500'}`}
+              >
+                <i data-lucide="book-open" class="w-4 h-4"></i>
+                <span class="text-[10px] mt-1">直感録</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('sound')}
+                class={`flex flex-col items-center py-1 ${activeTab === 'sound' ? 'text-pink-400' : 'text-slate-500'}`}
+              >
+                <i data-lucide="waves" class="w-4 h-4"></i>
+                <span class="text-[10px] mt-1">周波数</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('profile')}
+                class={`flex flex-col items-center py-1 ${activeTab === 'profile' ? 'text-pink-400' : 'text-slate-500'}`}
+              >
+                <i data-lucide="user" class="w-4 h-4"></i>
+                <span class="text-[10px] mt-1">人・星</span>
+              </button>
+            </div>
+          </nav>
+
+          <!-- 四相調和（ホ・オポノポノ）モーダル -->
+          {isCleansingModalOpen && (
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div class="glass-card rounded-2xl max-w-sm w-full p-6 text-center space-y-4">
+                {cleansingStep === 1 && (
+                  <>
+                    <span class="text-xs text-pink-300 font-serif-jp tracking-widest">Phase 1 : 受容（Acceptance）</span>
+                    <h3 class="text-lg font-serif-jp text-slate-100">ありのままを受け止める</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed font-serif-jp">
+                      「どのような感情も記憶も、完璧なタイミングで表出しています。否定せず、ただここに置きます。」
+                    </p>
+                  </>
+                )}
+
+                {cleansingStep === 2 && (
+                  <>
+                    <span class="text-xs text-pink-300 font-serif-jp tracking-widest">Phase 2 : 許し（Forgiveness）</span>
+                    <h3 class="text-lg font-serif-jp text-slate-100">ウニヒピリへの呼びかけ</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed font-serif-jp">
+                      「ごめんなさい。許してください。<br/>潜在意識の中に蓄積された記憶のノイズを優しく包みます。」
+                    </p>
+                  </>
+                )}
+
+                {cleansingStep === 3 && (
+                  <>
+                    <span class="text-xs text-pink-300 font-serif-jp tracking-widest">Phase 3 : ゼロ（Zero State）</span>
+                    <h3 class="text-lg font-serif-jp text-slate-100">空（Zero）への還元</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed font-serif-jp">
+                      「愛しています。<br/>星の波長と共に、執着や記憶データはまっさらな零に戻ります。」
+                    </p>
+                  </>
+                )}
+
+                {cleansingStep === 4 && (
+                  <>
+                    <span class="text-xs text-pink-300 font-serif-jp tracking-widest">Phase 4 : 感謝（Gratitude）</span>
+                    <h3 class="text-lg font-serif-jp text-slate-100">調和の完了</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed font-serif-jp">
+                      「ありがとうございます。<br/>あなたの内側は今、美しくクリアな状態に整いました。」
+                    </p>
+                  </>
+                )}
+
+                <div class="pt-4">
+                  <button
+                    onClick={advanceCleansing}
+                    class="w-full py-3 rounded-xl sakura-gradient text-white text-xs font-medium shadow-lg shadow-pink-500/20"
+                  >
+                    {cleansingStep === 4 ? "調和を終えて記録する" : "次へ進む"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <!-- About モーダル -->
+          {showAbout && (
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div class="glass-card rounded-2xl max-w-sm w-full p-6 text-left space-y-4 text-xs">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                  <h3 class="font-serif-jp text-sm text-amber-200">About SAKURA WORKS</h3>
+                  <button onClick={() => setShowAbout(false)} class="text-slate-400 hover:text-white">✕</button>
+                </div>
+                
+                <p class="text-slate-300 leading-relaxed">
+                  <strong>ほしピカ</strong> は、星の運行（月齢・星相）の波長と、ホ・オポノポノ的心理クリーニングを組み合わせたセルフリフレクションツールです。
+                </p>
+
+                <div class="space-y-1 text-slate-400 text-[11px]">
+                  <div>■ ブランド: SAKURA WORKS</div>
+                  <div>■ 星の案内人: 千鈴龍穂（Senrei Ryusui）</div>
+                  <div>■ プライバシー: 入力データはすべてブラウザ端末内にのみ保存されます。</div>
+                </div>
+
+                <div class="pt-2">
+                  <button
+                    onClick={() => setShowAbout(false)}
+                    class="w-full py-2 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700"
+                  >
+                    閉じる
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <!-- Pro Upgrade モーダル -->
+          {showProModal && (
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div class="glass-card rounded-2xl max-w-sm w-full p-6 text-left space-y-4 text-xs">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                  <h3 class="font-serif-jp text-sm gold-gradient-text">Pro メンバーシップ</h3>
+                  <button onClick={() => setShowProModal(false)} class="text-slate-400 hover:text-white">✕</button>
+                </div>
+
+                <p class="text-slate-300 leading-relaxed">
+                  Proプランでは、ビジネス・パートナーシップをさらに深める機能が解放されます。
+                </p>
+
+                <ul class="space-y-2 text-slate-300 text-[11px]">
+                  <li class="flex items-center space-x-2">
+                    <i data-lucide="check" class="w-3.5 h-3.5 text-pink-400"></i>
+                    <span>プロファイル登録無制限（取引先・クライアント）</span>
+                  </li>
+                  <li class="flex items-center space-x-2">
+                    <i data-lucide="check" class="w-3.5 h-3.5 text-pink-400"></i>
+                    <span>深層シナストリー相性解析</span>
+                  </li>
+                  <li class="flex items-center space-x-2">
+                    <i data-lucide="check" class="w-3.5 h-3.5 text-pink-400"></i>
+                    <span>JSONデータバックアップ＆復元</span>
+                  </li>
+                </ul>
+
+                <div class="pt-2 space-y-2">
+                  <button
+                    onClick={() => {
+                      setIsPro(!isPro);
+                      setShowProModal(false);
+                    }}
+                    class="w-full py-2.5 rounded-xl sakura-gradient text-white text-xs font-medium"
+                  >
+                    {isPro ? "Freeモードに切替" : "Proモードを有効化（テスト）"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
